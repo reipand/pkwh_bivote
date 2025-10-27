@@ -2,10 +2,11 @@
 date_default_timezone_set('Asia/Jakarta');
 
 // Konfigurasi database
-$host = "localhost"; // Ganti dengan host database Anda
-$user = "root"; // Ganti dengan username database Anda
-$password = ""; // Ganti dengan password database Anda
-$database = "db_pemilos"; // Ganti dengan nama database Anda
+// Otomatis detect environment (Docker vs Local)
+$host = getenv('DB_HOST') ?: "localhost"; // Gunakan mysql untuk Docker, localhost untuk local
+$user = getenv('DB_USER') ?: "reip"; // Ganti dengan username database Anda
+$password = getenv('DB_PASSWORD') ?: "bcst2526"; // Ganti dengan password database Anda
+$database = getenv('DB_NAME') ?: "db_pemilos"; // Ganti dengan nama database Anda
 
 // Buat koneksi menggunakan mysqli (mode OOP)
 $koneksi = new mysqli($host, $user, $password, $database);
