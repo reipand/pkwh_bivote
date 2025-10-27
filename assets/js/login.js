@@ -16,24 +16,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             feedbackMessage.textContent = '';
             feedbackMessage.classList.remove('text-red-500', 'text-green-500');
+            feedbackMessage.className = 'text-sm mb-2'; // Reset class untuk styling
 
             loginBtnSiswa.disabled = true;
             loginBtnSiswa.textContent = 'Memproses...';
 
             if (nisInput.value.trim() === '' || passwordInput.value.trim() === '') {
-                feedbackMessage.textContent = 'NIS dan Password tidak boleh kosong.';
-                feedbackMessage.classList.add('text-red-500');
+                feedbackMessage.innerHTML = '<div class="p-2 text-sm text-red-700 bg-red-100 rounded-lg">NIS dan Password tidak boleh kosong.</div>';
                 loginBtnSiswa.disabled = false;
                 loginBtnSiswa.textContent = 'LOGIN SISWA';
                 return;
             }
 
             const formData = new FormData(loginFormSiswa);
+            // --- PERUBAHAN UTAMA UNTUK KOMPATIBILITAS ---
+            const bodyParams = new URLSearchParams(formData);
 
             try {
                 const response = await fetch('../api/login_siswa.php', {
                     method: 'POST',
-                    body: formData
+                    body: bodyParams // Menggunakan URLSearchParams
                 });
 
                 if (!response.ok) {
@@ -43,14 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (data.status === 'success' && data.redirect) {
+                    // Redirect berhasil
                     window.location.href = data.redirect;
                 } else {
-                    feedbackMessage.textContent = data.message || 'Terjadi kesalahan tidak dikenal.';
-                    feedbackMessage.classList.add('text-red-500');
+                    // Menampilkan pesan error dari PHP
+                    feedbackMessage.innerHTML = `<div class="p-2 text-sm text-red-700 bg-red-100 rounded-lg">${data.message || 'Terjadi kesalahan tidak dikenal.'}</div>`;
                 }
             } catch (error) {
-                feedbackMessage.textContent = 'Terjadi kesalahan saat menghubungi server. Silakan coba lagi.';
-                feedbackMessage.classList.add('text-red-500');
+                console.error('AJAX Error:', error);
+                feedbackMessage.innerHTML = '<div class="p-2 text-sm text-red-700 bg-red-100 rounded-lg">Terjadi kesalahan saat menghubungi server. Silakan coba lagi.</div>';
             } finally {
                 loginBtnSiswa.disabled = false;
                 loginBtnSiswa.textContent = 'LOGIN SISWA';
@@ -65,24 +68,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             feedbackMessage.textContent = '';
             feedbackMessage.classList.remove('text-red-500', 'text-green-500');
+            feedbackMessage.className = 'text-sm mb-2'; // Reset class untuk styling
 
             loginBtnGuru.disabled = true;
             loginBtnGuru.textContent = 'Memproses...';
 
             if (nikInput.value.trim() === '' || passwordGuruInput.value.trim() === '') {
-                feedbackMessage.textContent = 'NIK dan Password tidak boleh kosong.';
-                feedbackMessage.classList.add('text-red-500');
+                feedbackMessage.innerHTML = '<div class="p-2 text-sm text-red-700 bg-red-100 rounded-lg">NIK dan Password tidak boleh kosong.</div>';
                 loginBtnGuru.disabled = false;
                 loginBtnGuru.textContent = 'LOGIN GURU';
                 return;
             }
 
             const formData = new FormData(loginFormGuru);
+            // --- PERUBAHAN UTAMA UNTUK KOMPATIBILITAS ---
+            const bodyParams = new URLSearchParams(formData);
 
             try {
                 const response = await fetch('../api/login_guru.php', {
                     method: 'POST',
-                    body: formData
+                    body: bodyParams // Menggunakan URLSearchParams
                 });
 
                 if (!response.ok) {
@@ -92,14 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (data.status === 'success' && data.redirect) {
+                    // Redirect berhasil
                     window.location.href = data.redirect;
                 } else {
-                    feedbackMessage.textContent = data.message || 'Terjadi kesalahan tidak dikenal.';
-                    feedbackMessage.classList.add('text-red-500');
+                    // Menampilkan pesan error dari PHP
+                    feedbackMessage.innerHTML = `<div class="p-2 text-sm text-red-700 bg-red-100 rounded-lg">${data.message || 'Terjadi kesalahan tidak dikenal.'}</div>`;
                 }
             } catch (error) {
-                feedbackMessage.textContent = 'Terjadi kesalahan saat menghubungi server. Silakan coba lagi.';
-                feedbackMessage.classList.add('text-red-500');
+                console.error('AJAX Error:', error);
+                feedbackMessage.innerHTML = '<div class="p-2 text-sm text-red-700 bg-red-100 rounded-lg">Terjadi kesalahan saat menghubungi server. Silakan coba lagi.</div>';
             } finally {
                 loginBtnGuru.disabled = false;
                 loginBtnGuru.textContent = 'LOGIN GURU';

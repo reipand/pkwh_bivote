@@ -1,6 +1,7 @@
 <?php
 // Mulai session
 session_start();
+require_once '../config/koneksi.php';
 
 // Ambil pesan error dari URL jika ada
 $error_message = '';
@@ -69,7 +70,7 @@ if (isset($_GET['error'])) {
         </div>
 
         <!-- Form Login Siswa -->
-        <form id="login-form-siswa" class="space-y-4" action="../api/login_siswa.php" method="POST" autocomplete="off">
+      <form id="login-form-siswa" class="space-y-4" action="/api/login_siswa.php" method="POST" autocomplete="off">
             <div>
                 <label for="nis" class="block text-left text-sm font-medium text-gray-700">NIS Siswa</label>
                 <input id="nis" name="nis" type="text" inputmode="numeric" pattern="\\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" autocomplete="off" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -90,7 +91,7 @@ if (isset($_GET['error'])) {
         </form>
 
         <!-- Form Login Guru -->
-        <form id="login-form-guru" class="space-y-4 hidden" action="../api/login_guru.php" method="POST" autocomplete="off">
+        <form id="login-form-guru" class="space-y-4 hidden" action="/api/login_guru.php" method="POST" autocomplete="off">
             <div>
                 <label for="nik" class="block text-left text-sm font-medium text-gray-700">NIK Guru</label>
                 <input id="nik" name="nik" type="text" inputmode="numeric" pattern="\\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" autocomplete="off" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">

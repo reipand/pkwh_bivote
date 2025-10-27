@@ -49,4 +49,5 @@ if (isset($_POST['nik']) && isset($_POST['password'])) {
 }
 
 echo json_encode($response);
+$koneksi->close();
 ?>

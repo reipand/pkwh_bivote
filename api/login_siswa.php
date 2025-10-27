@@ -31,9 +31,28 @@ if (isset($_POST['nis']) && isset($_POST['password'])) {
 
     // Query menggunakan prepared statement untuk keamanan
     // Terima kecocokan baik yang tersimpan dengan "/" maupun tanpa "/"
-    $stmt = $koneksi->prepare("SELECT id, nis, nama_lengkap, status_memilih, id_kandidat_dipilih FROM pemilih WHERE nis = ? AND (tanggal_lahir = ? OR REPLACE(tanggal_lahir, '/', '') = ?)");
+   $stmt = $koneksi->prepare("SELECT id, nis, nama_lengkap, status_memilih, id_kandidat_dipilih FROM pemilih WHERE nis = ? AND (TRIM(tanggal_lahir) = ? OR TRIM(tanggal_lahir) = ?)");
+    
+    // --- DEBUG LEVEL 1: Cek apakah prepare berhasil ---
+    if ($koneksi->error) {
+        error_log("SQL Prepare Error: " . $koneksi->error);
+    }
+    
+    // Perhatikan: Kita bind 3 parameter: NIS, Tanggal dengan slash, dan Tanggal TANPA slash.
     $stmt->bind_param("sss", $nis, $passwordWithSlashes, $passwordDigitsOnly);
+    
+    // --- DEBUG LEVEL 2: Cek apakah bind_param berhasil ---
+    if ($stmt->error) {
+        error_log("SQL Bind Param Error: " . $stmt->error);
+    }
+    
     $stmt->execute();
+    
+    // --- DEBUG LEVEL 3: Cek apakah execute berhasil ---
+    if ($stmt->error) {
+        error_log("SQL Execute Error: " . $stmt->error);
+    }
+    
     $result = $stmt->get_result();
 
     if ($result->num_rows === 1) {
