@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once '../config/koneksi.php';
-
 if (!isset($_SESSION['is_admin_logged_in']) || $_SESSION['is_admin_logged_in'] !== true) {
     header("Location: admin_login.php");
     exit;
@@ -128,7 +127,7 @@ $koneksi->close();
                     <h1 class="text-3xl font-bold text-gray-800">Laporan & Hasil Voting</h1>
                     <p class="text-gray-600 mt-1">Laporan terperinci mengenai hasil pemungutan suara.</p>
                 </div>
-                <a href="export_pdf.php" target="_blank" class="bg-indigo-600 text-white font-medium py-2 px-4 rounded-full hover:bg-indigo-700 transition-colors">
+                <a href="export_pdf2.php" target="_blank" class="bg-indigo-600 text-white font-medium py-2 px-4 rounded-full hover:bg-indigo-700 transition-colors">
                     Ekspor ke PDF
                 </a>
             </div>

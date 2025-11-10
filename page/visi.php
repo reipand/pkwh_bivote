@@ -10,6 +10,7 @@ if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
 $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
 $user_nama = isset($_SESSION['user_nama']) ? $_SESSION['user_nama'] : 'Pengguna';
 $user_type = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : 'siswa';
+$user_jabatan = isset($_SESSION['user_jabatan']) ? $_SESSION['user_jabatan'] : '';
 
 $has_voted = false;
 if ($user_type === 'guru') {
@@ -148,33 +149,70 @@ $koneksi->close();
         <div class="relative p-8 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-xl bg-white">
             <h3 class="text-2xl font-bold mb-4">Konfirmasi Pilihan</h3>
             <p id="modal-vote-text" class="text-gray-700 mb-6">Apakah Anda yakin ingin memilih <span class="font-bold" id="candidate-name-to-vote"></span>?</p>
+            <?php if ($user_type === 'guru'): ?>
+                <p class="text-yellow-700 mb-4">Anda akan memilih sebagai Guru: <?php echo htmlspecialchars($user_jabatan); ?>. Tindakan ini tidak dapat dibatalkan.</p>
+                <div class="flex items-center justify-start mb-4">
+                    <input id="guru-confirm-checkbox" type="checkbox" class="mr-2" />
+                    <label for="guru-confirm-checkbox" class="text-gray-700">Saya konfirmasi pilihan sebagai Guru</label>
+                </div>
+            <?php endif; ?>
             <div class="flex justify-end space-x-4">
                 <button id="close-vote-modal" class="py-2 px-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors">Batal</button>
-                <a id="confirm-vote-link" href="#" class="py-2 px-6 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors">Ya, Saya Yakin</a>
+                <?php if ($user_type === 'guru'): ?>
+                    <button id="confirm-vote-btn" disabled class="py-2 px-6 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors">Ya, Saya Yakin</button>
+                <?php else: ?>
+                    <a id="confirm-vote-link" href="#" class="py-2 px-6 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors">Ya, Saya Yakin</a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
     <script>
+        // Expose user type and jabatan to client-side
+        const USER_TYPE = '<?php echo $user_type; ?>';
+        const USER_JABATAN = '<?php echo addslashes($user_jabatan); ?>';
+
         document.addEventListener('DOMContentLoaded', function() {
             const voteButton = document.getElementById('vote-btn');
             const voteModal = document.getElementById('vote-modal');
             const candidateNameToVote = document.getElementById('candidate-name-to-vote');
             const closeVoteModal = document.getElementById('close-vote-modal');
             const confirmVoteLink = document.getElementById('confirm-vote-link');
+            const confirmVoteBtn = document.getElementById('confirm-vote-btn');
+
+            let currentCandidateId = null;
 
             voteButton.addEventListener('click', function() {
                 const candidateName = this.getAttribute('data-nama');
                 const candidateId = this.getAttribute('data-id');
-                
+
+                currentCandidateId = candidateId;
                 candidateNameToVote.textContent = candidateName;
-                confirmVoteLink.href = `../api/vote_handler.php?id=${candidateId}`;
-                
+
+                if (USER_TYPE === 'guru') {
+                    // reset checkbox and disable confirm button initially
+                    const guruCheckbox = document.getElementById('guru-confirm-checkbox');
+                    if (guruCheckbox) {
+                        guruCheckbox.checked = false;
+                    }
+                    if (confirmVoteBtn) {
+                        confirmVoteBtn.disabled = true;
+                    }
+                } else {
+                    if (confirmVoteLink) confirmVoteLink.href = `../api/vote_handler.php?id=${candidateId}`;
+                }
+
                 voteModal.classList.remove('hidden');
             });
 
             closeVoteModal.addEventListener('click', function() {
                 voteModal.classList.add('hidden');
+                currentCandidateId = null;
+                if (USER_TYPE === 'guru') {
+                    const guruCheckbox = document.getElementById('guru-confirm-checkbox');
+                    if (guruCheckbox) guruCheckbox.checked = false;
+                    if (confirmVoteBtn) confirmVoteBtn.disabled = true;
+                }
             });
 
             window.onclick = function(event) {
@@ -182,6 +220,22 @@ $koneksi->close();
                     voteModal.classList.add('hidden');
                 }
             };
+
+            // If guru, wire checkbox and confirm button
+            if (USER_TYPE === 'guru') {
+                const guruCheckbox = document.getElementById('guru-confirm-checkbox');
+                if (guruCheckbox && confirmVoteBtn) {
+                    guruCheckbox.addEventListener('change', function() {
+                        confirmVoteBtn.disabled = !this.checked;
+                    });
+
+                    confirmVoteBtn.addEventListener('click', function() {
+                        if (currentCandidateId) {
+                            window.location.href = `../api/vote_handler.php?id=${currentCandidateId}`;
+                        }
+                    });
+                }
+            }
         });
     </script>
 </body>

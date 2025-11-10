@@ -1,7 +1,10 @@
 <?php
-// Mulai session
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 session_start();
 require_once '../config/koneksi.php';
+
+
 
 // Ambil pesan error dari URL jika ada
 $error_message = '';
@@ -80,7 +83,7 @@ if (isset($_GET['error'])) {
                     <label for="password" class="block text-left text-sm font-medium text-gray-700">Password (Tanggal Lahir)</label>
                     
                 </div>
-                <input id="password" name="password" type="password" inputmode="numeric" pattern="(\d{2}\/\d{2}\/\d{2})" autocomplete="off" placeholder="DDMMYY atau DD/MM/YY" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <input id="password" name="password" type="password" inputmode="numeric" pattern="(\d{2}\/\d{2}\/\d{2})" autocomplete="off" placeholder="DD/MM/YY" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
             </div>
             
             <div>
@@ -94,7 +97,7 @@ if (isset($_GET['error'])) {
         <form id="login-form-guru" class="space-y-4 hidden" action="/api/login_guru.php" method="POST" autocomplete="off">
             <div>
                 <label for="nik" class="block text-left text-sm font-medium text-gray-700">NIK Guru</label>
-                <input id="nik" name="nik" type="text" inputmode="numeric" pattern="\\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" autocomplete="off" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <input id="nik" name="nik" type="text" inputmode="numeric" pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')" autocomplete="off" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
             </div>
             <div>
                 <div class="flex justify-between items-center">

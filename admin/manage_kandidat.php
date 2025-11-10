@@ -11,32 +11,54 @@ if (!isset($_SESSION['is_admin_logged_in']) || $_SESSION['is_admin_logged_in'] !
 // Logika untuk menangani penghapusan kandidat
 if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
     $id_to_delete = (int)$_GET['id'];
-    
-    // Ambil path foto dan video untuk dihapus dari server
-    $stmt_path = $koneksi->prepare("SELECT foto_path, video_path FROM kandidat WHERE id = ?");
+
+    // Ambil path foto dan video untuk dihapus dari server serta pastikan kandidat ada
+    $stmt_path = $koneksi->prepare("SELECT foto_path, video_path FROM kandidat WHERE id = ? LIMIT 1");
     $stmt_path->bind_param("i", $id_to_delete);
     $stmt_path->execute();
     $result_path = $stmt_path->get_result();
     $paths = $result_path->fetch_assoc();
     $stmt_path->close();
-    
-    // Hapus data dari database
-    $stmt_delete = $koneksi->prepare("DELETE FROM kandidat WHERE id = ?");
-    $stmt_delete->bind_param("i", $id_to_delete);
-    
-    if ($stmt_delete->execute()) {
-        // Jika penghapusan berhasil, hapus file dari server
-        if ($paths['foto_path'] && file_exists($paths['foto_path'])) {
-            unlink($paths['foto_path']);
-        }
-        if ($paths['video_path'] && file_exists($paths['video_path'])) {
-            unlink($paths['video_path']);
-        }
-        $message = "Kandidat berhasil dihapus.";
+
+    if (!$paths) {
+        $message = "Kandidat tidak ditemukan.";
     } else {
-        $message = "Gagal menghapus kandidat: " . $stmt_delete->error;
+        // Gunakan transaksi: reset pemilih yang memilih kandidat ini, lalu hapus kandidat
+        $koneksi->begin_transaction();
+        try {
+            // Set ulang pemilih yang memilih kandidat ini
+            $stmt_reset = $koneksi->prepare("UPDATE pemilih SET id_kandidat_dipilih = NULL, status_memilih = 0 WHERE id_kandidat_dipilih = ?");
+            $stmt_reset->bind_param("i", $id_to_delete);
+            $stmt_reset->execute();
+            $stmt_reset->close();
+
+            // Hapus kandidat
+            $stmt_delete = $koneksi->prepare("DELETE FROM kandidat WHERE id = ?");
+            $stmt_delete->bind_param("i", $id_to_delete);
+            $stmt_delete->execute();
+            $affected = $stmt_delete->affected_rows;
+            $stmt_delete->close();
+
+            if ($affected > 0) {
+                $koneksi->commit();
+                // Setelah commit berhasil, hapus file fisik jika ada
+                if (!empty($paths['foto_path']) && file_exists($paths['foto_path'])) {
+                    @unlink($paths['foto_path']);
+                }
+                if (!empty($paths['video_path']) && file_exists($paths['video_path'])) {
+                    @unlink($paths['video_path']);
+                }
+                $message = "Kandidat berhasil dihapus dan suara terkait telah di-reset.";
+            } else {
+                $koneksi->rollback();
+                $message = "Kandidat tidak ditemukan atau gagal dihapus.";
+            }
+
+        } catch (mysqli_sql_exception $ex) {
+            $koneksi->rollback();
+            $message = "Gagal menghapus kandidat: " . $ex->getMessage();
+        }
     }
-    $stmt_delete->close();
 }
 
 // Ambil semua data kandidat dari database

@@ -125,6 +125,13 @@ $koneksi->close();
         <div class="relative p-8 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-xl bg-white">
             <h3 class="text-2xl font-bold mb-4">Konfirmasi Pilihan</h3>
             <p id="modal-vote-text" class="text-gray-700 mb-6">Apakah Anda yakin ingin memilih <span class="font-bold" id="candidate-name-to-vote"></span>?</p>
+            <?php if ($user_type === 'guru'): ?>
+                <p class="text-yellow-700 mb-4">Anda akan memilih sebagai Guru: <?php echo htmlspecialchars($user_jabatan); ?>. Tindakan ini tidak dapat dibatalkan.</p>
+                <div class="flex items-center justify-start mb-4">
+                    <input id="guru-confirm-checkbox" type="checkbox" class="mr-2" />
+                    <label for="guru-confirm-checkbox" class="text-gray-700">Saya konfirmasi pilihan sebagai Guru</label>
+                </div>
+            <?php endif; ?>
             <div class="flex justify-end space-x-4">
                 <button id="close-vote-modal" class="py-2 px-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors">Batal</button>
                 <button id="confirm-vote-btn" class="py-2 px-6 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors">Ya, Saya Yakin</button>
@@ -134,11 +141,15 @@ $koneksi->close();
     
 
     <script>
+    // Expose user type and jabatan to client-side for conditional behavior
+    const USER_TYPE = '<?php echo $user_type; ?>';
+    const USER_JABATAN = '<?php echo addslashes($user_jabatan); ?>';
+
     document.addEventListener('DOMContentLoaded', function() {
         const voteButtons = document.querySelectorAll('.vote-btn:not([disabled])');
         const voteModal = document.getElementById('vote-modal');
         const candidateNameToVote = document.getElementById('candidate-name-to-vote');
-        const confirmVoteBtn = document.getElementById('confirm-vote-btn');
+    const confirmVoteBtn = document.getElementById('confirm-vote-btn');
         const closeVoteModal = document.getElementById('close-vote-modal');
         
         let selectedCandidateId = null;
@@ -149,12 +160,26 @@ $koneksi->close();
                 const candidateName = this.getAttribute('data-nama');
                 candidateNameToVote.textContent = candidateName;
                 voteModal.classList.remove('hidden');
+
+                // If current user is guru, require explicit confirmation checkbox
+                if (USER_TYPE === 'guru') {
+                    const guruCheckbox = document.getElementById('guru-confirm-checkbox');
+                    if (guruCheckbox) {
+                        guruCheckbox.checked = false;
+                        confirmVoteBtn.disabled = true;
+                    }
+                }
             });
         });
 
         closeVoteModal.addEventListener('click', function() {
             voteModal.classList.add('hidden');
             selectedCandidateId = null;
+            if (USER_TYPE === 'guru') {
+                const guruCheckbox = document.getElementById('guru-confirm-checkbox');
+                if (guruCheckbox) guruCheckbox.checked = false;
+                if (confirmVoteBtn) confirmVoteBtn.disabled = true;
+            }
         });
 
         window.addEventListener('click', function(event) {
@@ -164,11 +189,24 @@ $koneksi->close();
             }
         });
 
-        confirmVoteBtn.addEventListener('click', function() {
-            if (selectedCandidateId) {
-                window.location.href = `../api/vote_handler.php?id=${selectedCandidateId}`;
+        // Jika tombol konfirmasi ada (button), gunakan event click
+        if (confirmVoteBtn) {
+            // Jika user guru, listen ke checkbox untuk enable/disable
+            if (USER_TYPE === 'guru') {
+                const guruCheckbox = document.getElementById('guru-confirm-checkbox');
+                if (guruCheckbox) {
+                    guruCheckbox.addEventListener('change', function() {
+                        confirmVoteBtn.disabled = !this.checked;
+                    });
+                }
             }
-        });
+
+            confirmVoteBtn.addEventListener('click', function() {
+                if (selectedCandidateId) {
+                    window.location.href = `../api/vote_handler.php?id=${selectedCandidateId}`;
+                }
+            });
+        }
     });
     </script>
 </body>

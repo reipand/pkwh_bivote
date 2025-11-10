@@ -7,15 +7,74 @@ if (!isset($_SESSION['is_admin_logged_in']) || $_SESSION['is_admin_logged_in'] !
     exit;
 }
 
+// Logika penghapusan guru (langsung dari halaman kelola)
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+    $id_to_delete = (int)$_GET['id'];
+
+    $koneksi->begin_transaction();
+    try {
+        // Ambil informasi guru (termasuk status memilih dan kandidat yang dipilih)
+        $stmt = $koneksi->prepare("SELECT status_memilih, id_kandidat_dipilih FROM guru WHERE id = ? LIMIT 1");
+        $stmt->bind_param("i", $id_to_delete);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $guru_row = $res->fetch_assoc();
+        $stmt->close();
+
+        if (!$guru_row) {
+            $koneksi->rollback();
+            $_SESSION['error_message'] = "Guru tidak ditemukan.";
+            header('Location: manage_guru.php');
+            exit;
+        }
+
+        if ((int)$guru_row['status_memilih'] === 1 && !is_null($guru_row['id_kandidat_dipilih'])) {
+            $id_kandidat = (int)$guru_row['id_kandidat_dipilih'];
+            $stmt_dec = $koneksi->prepare("UPDATE kandidat SET jumlah_suara = GREATEST(jumlah_suara - 1, 0) WHERE id = ?");
+            $stmt_dec->bind_param("i", $id_kandidat);
+            $stmt_dec->execute();
+            $stmt_dec->close();
+        }
+
+        $stmt_del = $koneksi->prepare("DELETE FROM guru WHERE id = ?");
+        $stmt_del->bind_param("i", $id_to_delete);
+        $stmt_del->execute();
+        $affected = $stmt_del->affected_rows;
+        $stmt_del->close();
+
+        if ($affected > 0) {
+            $koneksi->commit();
+            $_SESSION['success_message'] = "Guru berhasil dihapus.";
+            header('Location: manage_guru.php');
+            exit;
+        } else {
+            $koneksi->rollback();
+            $_SESSION['error_message'] = "Gagal menghapus guru.";
+            header('Location: manage_guru.php');
+            exit;
+        }
+
+    } catch (mysqli_sql_exception $ex) {
+        $koneksi->rollback();
+        $_SESSION['error_message'] = "Gagal menghapus guru: " . $ex->getMessage();
+        header('Location: manage_guru.php');
+        exit;
+    }
+}
+
 // Ambil data guru
 $sql = "SELECT id, nama_lengkap, nik, jabatan, status_memilih, created_at FROM guru ORDER BY nama_lengkap ASC";
 $result = $koneksi->query($sql);
 
 $guru_list = [];
-if ($result->num_rows > 0) {
+if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
+        // Normalisasi tipe data
+        $row['id'] = isset($row['id']) ? (int)$row['id'] : null;
+        $row['status_memilih'] = isset($row['status_memilih']) && (int)$row['status_memilih'] === 1 ? 1 : 0;
         $guru_list[] = $row;
     }
+    $result->free();
 }
 
 $koneksi->close();
@@ -53,6 +112,20 @@ $koneksi->close();
                     Tambah Guru
                 </button>
             </div>
+
+            <?php if (isset($_SESSION['success_message'])): ?>
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline"><?php echo htmlspecialchars($_SESSION['success_message']); ?></span>
+                </div>
+                <?php unset($_SESSION['success_message']); ?>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['error_message'])): ?>
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline"><?php echo htmlspecialchars($_SESSION['error_message']); ?></span>
+                </div>
+                <?php unset($_SESSION['error_message']); ?>
+            <?php endif; ?>
 
             <div class="bg-white p-6 rounded-3xl shadow-lg">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Daftar Guru</h2>
@@ -138,16 +211,13 @@ $koneksi->close();
         }
 
         function editGuru(id) {
-            // Implementasi edit guru
-            alert('Fitur edit akan segera tersedia!');
+            // Arahkan ke halaman edit guru
+            window.location.href = 'edit_guru.php?id=' + encodeURIComponent(id);
         }
 
         function deleteGuru(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus guru ini?')) {
-                // Implementasi hapus guru
-                alert('Fitur hapus akan segera tersedia!');
+            if (confirm('Apakah Anda yakin ingin menghapus guru ini? Tindakan ini akan menghapus akun guru dan mengurangi suara kandidat terkait jika sudah memilih.')) {
+                // Arahkan ke endpoint delete pada halaman ini
+                window.location.href = 'manage_guru.php?action=delete&id=' + encodeURIComponent(id);
             }
         }
-    </script>
-</body>
-</html>

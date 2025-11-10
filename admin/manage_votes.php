@@ -11,30 +11,45 @@ if (!isset($_SESSION['is_admin_logged_in']) || $_SESSION['is_admin_logged_in'] !
 // Logika untuk menangani penghapusan pemilih
 if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
     $id_to_delete = (int)$_GET['id'];
-    
-    $stmt_delete = $koneksi->prepare("DELETE FROM pemilih WHERE id = ?");
-    $stmt_delete->bind_param("i", $id_to_delete);
-    
-    if ($stmt_delete->execute()) {
-        $message = "Pemilih berhasil dihapus.";
-    } else {
-        $message = "Gagal menghapus pemilih: " . $stmt_delete->error;
-    }
-    $stmt_delete->close();
-}
 
-if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
-    $id_to_delete = (int)$_GET['id'];
+    // Gunakan transaksi: jika pemilih sudah memilih, kurangi jumlah suara kandidat terkait sebelum menghapus pemilih
+    $koneksi->begin_transaction();
+    try {
+        $stmt_sel = $koneksi->prepare("SELECT status_memilih, id_kandidat_dipilih FROM pemilih WHERE id = ? LIMIT 1");
+        $stmt_sel->bind_param("i", $id_to_delete);
+        $stmt_sel->execute();
+        $res = $stmt_sel->get_result();
+        $row = $res->fetch_assoc();
+        $stmt_sel->close();
 
-    $stmt_delete = $koneksi->prepare("DELETE id_kandidat_dipilih FROM pemilih WHERE id = ?");
-    $stmt_delete->bind_param("i", $id_to_delete);
-    
-    if ($stmt_delete->execute()) {
-        $message = "Suara berhasil dihapus.";
-    } else {
-        $message = "Gagal menghapus suara: " . $stmt_delete->error;
+        if ($row) {
+            $status_memilih = (int)$row['status_memilih'];
+            $id_kandidat = isset($row['id_kandidat_dipilih']) ? (int)$row['id_kandidat_dipilih'] : null;
+
+            if ($status_memilih === 1 && $id_kandidat) {
+                $stmt_dec = $koneksi->prepare("UPDATE kandidat SET jumlah_suara = GREATEST(jumlah_suara - 1, 0) WHERE id = ?");
+                $stmt_dec->bind_param("i", $id_kandidat);
+                $stmt_dec->execute();
+                $stmt_dec->close();
+            }
+
+            $stmt_delete = $koneksi->prepare("DELETE FROM pemilih WHERE id = ?");
+            $stmt_delete->bind_param("i", $id_to_delete);
+            $stmt_delete->execute();
+            $stmt_delete->close();
+
+            $koneksi->commit();
+            $message = "Pemilih berhasil dihapus.";
+        } else {
+            // jika tidak ditemukan, rollback dan beri pesan
+            $koneksi->rollback();
+            $message = "Pemilih tidak ditemukan.";
+        }
+
+    } catch (mysqli_sql_exception $ex) {
+        $koneksi->rollback();
+        $message = "Gagal menghapus pemilih: " . $ex->getMessage();
     }
-    $stmt_delete->close();
 }
 
 // Ambil semua data pemilih dari database

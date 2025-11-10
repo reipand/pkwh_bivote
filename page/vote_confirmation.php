@@ -11,6 +11,8 @@ if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
 $status = $_SESSION['vote_status'] ?? 'failed';
 $user_name = $_SESSION['user_nama'] ?? 'Pengguna';
 $user_type = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : 'siswa';
+$user_type = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : 'siswa';
+
 
 // Hapus status vote dari sesi setelah ditampilkan
 unset($_SESSION['vote_status']);
@@ -67,7 +69,14 @@ if ($status === 'success') {
                 <h1 class="text-3xl font-bold text-gray-800 mb-2"><?php echo htmlspecialchars($message_title); ?></h1>
                 <p class="text-gray-600"><?php echo htmlspecialchars($message_body); ?></p>
             </div>
-            <a href="logout.php" class="bg-indigo-600 text-white font-medium py-3 px-8 rounded-full hover:bg-indigo-700 transition-colors">Logout</a>
+            <div class="flex justify-center gap-4">
+                <?php if ($user_type === 'guru'): ?>
+                    <a href="dashboard.php" class="bg-green-600 text-white font-medium py-3 px-6 rounded-full hover:bg-green-700 transition-colors">Kembali ke Dashboard Guru</a>
+                <?php else: ?>
+                    <a href="dashboard.php" class="bg-gray-200 text-gray-800 font-medium py-3 px-6 rounded-full hover:bg-gray-300 transition-colors">Kembali ke Dashboard</a>
+                <?php endif; ?>
+                <a href="logout.php" class="bg-indigo-600 text-white font-medium py-3 px-8 rounded-full hover:bg-indigo-700 transition-colors">Logout</a>
+            </div>
         </div>
     </div>
 </body>
